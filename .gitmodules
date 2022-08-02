@@ -1,0 +1,15 @@
+[submodule "Dependencies/json"]
+	path = Dependencies/json
+	url = https://github.com/GDSC-Saratov/json.git
+[submodule "Dependencies/raylib"]
+	path = Dependencies/raylib
+	url = https://github.com/GDSC-Saratov/raylib.git
+[submodule "Dependencies/raygui"]
+	path = Dependencies/raygui
+	url = https://github.com/GDSC-Saratov/raygui.git
+[submodule "Dependencies/raylib-ext"]
+	path = Dependencies/raylib-ext
+	url = https://github.com/GDSC-Saratov/raylib-ext.git
+[submodule "Dependencies/box2d"]
+	path = Dependencies/box2d
+	url = https://github.com/GDSC-Saratov/box2d.git
