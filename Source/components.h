@@ -31,6 +31,8 @@ public:
 
     Entity();
 
+    //Entity copy();
+
     template <typename T> 
     T *
     getComponent()
@@ -61,8 +63,9 @@ class Sprite : public Component
 public:
     Texture2D texture;
     Image image;
-
+    std::string path;
     Sprite(const std::string& path);
+    Sprite();
     std::string get_component_type() override;
     void update(float dt, Entity_id parent_id, Storage &storage) override;
 };
@@ -114,7 +117,7 @@ class World : public Component
 public:
     b2World *cur_world;
     b2TimeStep time_settings;
-
+    World();
     World(b2Vec2 gravity, float timestep = 1.0f/60.0f, int32 vel_it = 6, int32 pos_it = 2);
     void update(float dt, Entity_id parent_id, Storage &storage) override;
     std::string get_component_type() override;

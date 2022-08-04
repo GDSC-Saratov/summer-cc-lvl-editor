@@ -1,0 +1,1 @@
+{"entities":[{"name":"World","type":"Info"},{"Position":2,"Velocity":6,"gravity":[0.0,-100.0],"timeStep":0.07999999821186066,"type":"World"},{"name":"Camera","type":"Info"},{"angle":0.0,"pos":[-51.0,124.0,0.0],"scale":[1.0,1.0],"type":"Transform"},{"scale":[1.0,1.0],"type":"Camera"}]}

@@ -1,4 +1,5 @@
 #include "components.h"
+#include <cstring>
 
 namespace plat {
 
@@ -7,6 +8,22 @@ Entity::Entity()
     static Entity_id count = 0;
     id = count++;
 }
+
+World::World() {}
+
+//Entity Entity::copy() {
+//    Entity ent;
+//    for (auto& cmp : this->components)
+//    {
+//        if (cmp->get_component_type() == Transform().get_component_type()) {
+//            Transform* new_trans = new Transform();
+//            new_trans->pos = cmp->pos;
+//            ent.components.push_back(new_trans);
+//        }
+//       
+//    }
+//    return ent;
+//}
 
 std::string
 Transform::get_component_type()
@@ -53,7 +70,10 @@ Sprite::Sprite(const std::string &path)
 {
     image = LoadImage(path);
     texture = LoadTextureFromImage(image);
+    this->path = path;
 }
+
+Sprite::Sprite() {}
 
 std::string
 Sprite::get_component_type()

@@ -8,9 +8,12 @@
 
 bool mod = true;
 bool insert_mod = false;
+bool grab_mod = false;
+bool show_mod = false;
+bool play_mod = false;
 std::string path_to_lvl = "Assets/Scenes/";
 
-int current_ent_id = -1;
+int current_ent_id = 0;
 std::string input_field = "";
 
 int
@@ -27,14 +30,17 @@ main()
 
     while (!WindowShouldClose())
     {
-        /*for (auto &entity : storage.entities)
-        {
-            for (auto &component : entity.components)
+        if (play_mod) {
+         
+            for (auto& entity : storage.entities)
             {
-                component->update(GetFrameTime(), entity.id, storage);
+                for (auto& component : entity.components)
+                {
+                    component->update(GetFrameTime(), entity.id, storage);
+                }
             }
-        }*/
 
+        }
         
 
         BeginDrawing();
@@ -94,7 +100,7 @@ main()
                     }
 
                     DrawTextureV(spr->texture, screen_pos, WHITE);
-                    if (ph)
+                    if (ph && play_mod)
                     {
                         auto c = ph->body->GetFixtureList()->GetAABB(0).GetCenter();
                         auto a = ph->body->GetFixtureList()->GetAABB(0).lowerBound;
@@ -126,9 +132,11 @@ main()
 
             if (current_ent_id != -1) {
                 DrawTextEx(fontTtf, "- > "+storage.entities[current_ent_id].name, Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
-                DrawTextEx(fontTtf, "enter - add new component " + input_field,
+                DrawTextEx(fontTtf, "enter - add new component " + input_field +
+                    "1 Transform\n2 Physic\n3 Sprite\n4 Player controll\n",
                     Vector2{ 10,10 + (float)fontTtf.baseSize * 2 },
                     (float)fontTtf.baseSize, 2, RED);
+                read_keyboard(input_field);
             }
             else {
                 
@@ -145,36 +153,104 @@ main()
                     storage.entities.back().id = storage.entities.size()-1;
                     storage.entities.back().name = input_field;
                     current_ent_id = storage.entities.back().id;
+                    input_field = "";
                 }
             }
 
             if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Q)) {
                 insert_mod = false;
+                current_ent_id = 0;
             }
         }
-        else {
+        else if (grab_mod) {
             cam->update(GetFrameTime(), storage.cur_camera, storage);
+            
+            DrawTextEx(fontTtf, "grab mod\n" + std::to_string(current_ent_id) + " entitie: " + storage.entities[current_ent_id].name,
+                Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
 
-
-            if (IsKeyDown(KEY_TAB)) {
-                DrawRectangleV(Vector2{ 0,0 }, Vector2{ screen_size.x ,screen_size.y }, Color{ 100,100,100,100 });
-                DrawTextEx(fontTtf, list_entities(storage, current_ent_id), Vector2{ 10,10 }, (float)fontTtf.baseSize*0.75, 2, RED);
+            storage.entities[current_ent_id].getComponent<plat::Transform>()->pos = 
+               storage.entities[storage.cur_camera].getComponent<plat::Transform>()->pos;
+            
+           
+            Vector3 cam_pos= storage.entities[current_ent_id].getComponent<plat::Transform>()->pos;
+            plat::Physics* ph = storage.entities[current_ent_id].getComponent<plat::Physics>();
+            
+            if (ph) {
+                ph->body->SetTransform(b2Vec2{ cam_pos.x, cam_pos.y }, 0);
             }
-            else if (IsKeyPressed(KEY_UP)) {
+            
+            if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Q)) {
+                grab_mod = false;
+            }
+        }
+        else if (show_mod) {
+            DrawRectangleV(Vector2{ 0,0 }, Vector2{ screen_size.x ,screen_size.y }, Color{ 100,100,100,100 });
+            DrawTextEx(fontTtf, list_entities(storage, current_ent_id), Vector2{ 10,10 }, (float)fontTtf.baseSize * 0.75, 2, WHITE);
+
+            if (IsKeyPressed(KEY_UP)) {
                 current_ent_id--;
+                if (current_ent_id < 0) {
+                    current_ent_id = 0;
+                }
             }
             else if (IsKeyPressed(KEY_DOWN)) {
                 current_ent_id++;
+                if (current_ent_id > storage.entities.size() - 1) {
+                    current_ent_id = storage.entities.size() - 1;
+                }
+            }
+
+            if (IsKeyReleased(KEY_TAB)) {
+                show_mod = false;
+            }
+        }
+        else {
+            
+
+
+            if (IsKeyDown(KEY_TAB)) {
+                show_mod = true;
             }
             else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_A)) {
                 insert_mod = true;
                 current_ent_id = -1;
                 input_field = "";
             }
-            else {
-                DrawTextEx(fontTtf, "lvl-editor: " + storage.lvl_name, Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, RED);
-                DrawTextEx(fontTtf, "entities: " + std::to_string(storage.entities.size()), Vector2{ 10,40 }, (float)fontTtf.baseSize, 2, RED);
+            /*else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_D)) {
+                if (current_ent_id != -1) {
+                    storage.entities.push_back(storage.entities[current_ent_id].copy());
+                    storage.entities.back().id = storage.entities.size() - 1;
+                } 
+            }*/
+            else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_G)) {
+                if (current_ent_id != -1) {
+                    grab_mod = true;
+                    storage.entities[storage.cur_camera].getComponent<plat::Transform>()->pos =
+                        storage.entities[current_ent_id].getComponent<plat::Transform>()->pos;
+                }
             }
+            else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_P)) {
+                play_mod = true;
+            }
+            else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_E)) {
+                play_mod = false;
+            }
+            else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_J) && !play_mod) {
+                export_lvl(storage);
+            }
+            else {
+                DrawTextEx(fontTtf, "Lvl-editor: " + storage.lvl_name + "\n" + 
+                                    "Entities: " + std::to_string(storage.entities.size()) + "\n" +
+                                    "Current entitie: " + std::to_string(current_ent_id) + " " + 
+                                    storage.entities[current_ent_id].name + "\n" +  
+                                    ((play_mod)?("Play mod"):("Editor mod")),
+                                    Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
+                
+            }
+
+            cam->update(GetFrameTime(), storage.cur_camera, storage);
+            
+            
         }
         EndDrawing();
     }

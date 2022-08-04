@@ -20,7 +20,7 @@ load_lvl(std::string path)
         new_lvl.entities.push_back(plat::Entity());
         for (auto &component : entity)
         {
-            if (component["type"] == "info")
+            if (component["type"] == "Info")
             {
                 new_lvl.entities.back().name = component["name"];
             }
@@ -128,31 +128,8 @@ load_lvl(std::string path)
 }
 
 plat::Storage default_lvl(std::string path) {
-    plat::Storage new_lvl;
+    plat::Storage new_lvl = load_lvl("Assets/Scenes/base.json");
     new_lvl.lvl_name = path;
-    new_lvl.entities.push_back(plat::Entity());
-    
-    new_lvl.entities.back().name = "Camera";
-
-    plat::Camera* cam = new plat::Camera();
-    cam->scale = Vector2{
-        1,1
-    };
-    new_lvl.entities.back().components.push_back(cam);
-    new_lvl.cur_camera = new_lvl.entities.size() - 1;
-
-    plat::Transform* transform = new plat::Transform();
-    transform->angle = 0;
-    transform->pos = Vector3{
-        0,
-        100,
-        0
-    };
-    transform->scale = Vector2{
-        1,1
-    };
-    new_lvl.entities.back().components.push_back(transform);
-
     return new_lvl;
 }
 
