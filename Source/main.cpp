@@ -11,15 +11,27 @@ bool insert_mod = false;
 bool grab_mod = false;
 bool show_mod = false;
 bool play_mod = false;
+bool choose_sprite_mod = false;
 std::string path_to_lvl = "Assets/Scenes/";
 
 int current_ent_id = 0;
 std::string input_field = "";
 
+enum Components
+{
+    TRANSFORM = 1,
+    PHYSIC_DYNAMIC = 2,
+    SPRITE = 3,
+    PLAYER_CONTROLL = 4,
+    WORLD = 5,
+    CAMERA = 6,
+    PHYSIC_STATIC = 7
+};
+
 int
 main()
 {
-    const Vector2 screen_size { 720, 480 };
+    const Vector2 screen_size { 1280, 720 };
     InitWindow(screen_size.x, screen_size.y, "Creative Coding: Platformer");
     SetTargetFPS(60);
     Font fontTtf = LoadFontEx("Assets/Fonts/monogram.ttf", 32, 0, 104);
@@ -76,8 +88,12 @@ main()
                 if (spr)
                 {
                     plat::Transform *t = draw_queue[i]->getComponent<plat::Transform>();
+                    if (!t)
+                        continue;
+                   
                     plat::Physics *ph = draw_queue[i]->getComponent<plat::Physics>();
-
+                        
+                    
                     Vector2 screen_pos = {
                         (t->pos.x - cam_t->pos.x) * cam->scale.x,
                         (cam_t->pos.y - t->pos.y) * cam->scale.y
@@ -132,11 +148,145 @@ main()
 
             if (current_ent_id != -1) {
                 DrawTextEx(fontTtf, "- > "+storage.entities[current_ent_id].name, Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
-                DrawTextEx(fontTtf, "enter - add new component " + input_field +
-                    "1 Transform\n2 Physic\n3 Sprite\n4 Player controll\n",
+                DrawTextEx(fontTtf, "enter - add new component: " + input_field +
+                    "\n1 Transform      2 Physic dynamic\n"+
+                      "3 Sprite         4 Player controll\n" +
+                      "5 World          6 Camera\n" +
+                      "7 Physic static\n------------------\n\n" + 
+                        list_entities(storage, storage.entities.size()-1),
                     Vector2{ 10,10 + (float)fontTtf.baseSize * 2 },
                     (float)fontTtf.baseSize, 2, RED);
+                
                 read_keyboard(input_field);
+                
+                if (std::isdigit(input_field[0]) && input_field.length() == 1) {
+                    int command = std::stoi(input_field);
+
+                    if (IsKeyPressed(KEY_ENTER)) {
+                        switch (command) {
+                        case  TRANSFORM: {
+                            plat::Transform* transform = new plat::Transform();
+                            transform->angle = 0;
+                            transform->pos = Vector3{
+                                0,0,0
+                            };
+                            transform->scale = Vector2{
+                                1,1
+                            };
+                            storage.entities.back().components.push_back(transform);
+                            break;
+                        }
+                        case PHYSIC_DYNAMIC: {
+                            plat::Transform* trans = storage.entities.back().getComponent<plat::Transform>();
+                            
+                            if (!trans)
+                                break;
+
+                            plat::Physics* cur_phys = new plat::Physics();
+
+                            cur_phys->collider = Rectangle{
+                                0,0,0,0
+                            };
+
+                            cur_phys->bodyDef.position.Set(
+                                trans->pos.x,
+                                trans->pos.y
+                            );
+
+                            b2PolygonShape* shape = new b2PolygonShape();
+
+                            shape->SetAsBox(
+                                cur_phys->collider.width * trans->scale.x / 2.f,
+                                cur_phys->collider.height * trans->scale.y / 2.f
+                            );
+
+
+
+                            cur_phys->bodyDef.type = b2_dynamicBody;
+
+                            cur_phys->body = storage.entities[storage.cur_world].getComponent<plat::World>()->cur_world->CreateBody(&cur_phys->bodyDef);
+
+                            b2FixtureDef* fixtureDef = new b2FixtureDef();
+                            fixtureDef->shape = shape;
+                            fixtureDef->density = 2.0f;
+                            fixtureDef->friction = 0.3f;
+                            cur_phys->body->CreateFixture(fixtureDef);
+
+                            cur_phys->body->SetFixedRotation(true);
+                            storage.entities.back().components.push_back(cur_phys);
+                        }
+                        case SPRITE: {
+                            storage.entities.back().components.push_back(
+                                new plat::Sprite(std::string(""))
+                            );
+                            break;
+                        }
+                        case PLAYER_CONTROLL: {
+                            plat::Player_control* player_control = new plat::Player_control();
+                            player_control->speed = 100;
+                            storage.entities.back().components.push_back(player_control);
+                            break;
+                        }
+                        case WORLD: {
+                            b2Vec2 gravity(0, -100);
+                            float timestep = 0.07999999821186066;
+                            int32 velocityIterations = 6;
+                            int32 positionIterations = 2;
+                            plat::World* Cur_World = new plat::World(
+                                gravity,
+                                timestep,
+                                velocityIterations,
+                                positionIterations);
+
+                            storage.entities.back().components.push_back(Cur_World);
+                            storage.cur_world = storage.entities.size() - 1;
+                            break;
+                        }
+                        case CAMERA:
+                        {
+                            plat::Camera* cam = new plat::Camera();
+                            cam->scale = Vector2{
+                                1,1
+                            };
+                            storage.entities.back().components.push_back(cam);
+                            storage.cur_camera = storage.entities.size() - 1;
+                            break;
+                        }
+                        case PHYSIC_STATIC:
+                        {
+                            plat::Transform* trans = storage.entities.back().getComponent<plat::Transform>();
+                            plat::Physics* cur_phys = new plat::Physics();
+
+                            cur_phys->collider = Rectangle{
+                                0,0,0,0
+                            };
+
+                            cur_phys->bodyDef.position.Set(
+                                trans->pos.x,
+                                trans->pos.y
+                            );
+
+                            b2PolygonShape* shape = new b2PolygonShape();
+
+                            shape->SetAsBox(
+                                cur_phys->collider.width * trans->scale.x / 2.f,
+                                cur_phys->collider.height * trans->scale.y / 2.f
+                            );
+
+                            cur_phys->body = storage.entities[storage.cur_world].getComponent<plat::World>()->cur_world->CreateBody(&cur_phys->bodyDef);
+                            cur_phys->body->CreateFixture(shape, 0.0f);
+
+                            cur_phys->body->SetFixedRotation(true);
+                            storage.entities.back().components.push_back(cur_phys);
+                            break;
+                        }
+                        default:
+                            input_field = "error";
+                            break;
+                        }
+                    }
+                }
+
             }
             else {
                 
@@ -192,12 +342,19 @@ main()
                 if (current_ent_id < 0) {
                     current_ent_id = 0;
                 }
+                
             }
             else if (IsKeyPressed(KEY_DOWN)) {
                 current_ent_id++;
                 if (current_ent_id > storage.entities.size() - 1) {
                     current_ent_id = storage.entities.size() - 1;
                 }
+                
+            }
+
+            if (storage.entities[current_ent_id].getComponent<plat::Transform>() != nullptr) {
+                storage.entities[storage.cur_camera].getComponent<plat::Transform>()->pos =
+                    storage.entities[current_ent_id].getComponent<plat::Transform>()->pos;
             }
 
             if (IsKeyReleased(KEY_TAB)) {

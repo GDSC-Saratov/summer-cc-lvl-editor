@@ -102,6 +102,8 @@ void read_keyboard(std::string& field) {
 
 }
 
+
+
 std::string list_entities(plat::Storage storage, int current_ent_id) {
     std::string ls_ent;
 
@@ -127,3 +129,4 @@ std::string list_entities(plat::Storage storage, int current_ent_id) {
 
     return ls_ent;
 }
+
