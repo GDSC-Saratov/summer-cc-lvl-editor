@@ -5,6 +5,9 @@
 #include "json_loader.h"
 #include "render.h"
 #include "editor.h"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 bool mod = true;
 bool insert_mod = false;
@@ -12,10 +15,15 @@ bool grab_mod = false;
 bool show_mod = false;
 bool play_mod = false;
 bool choose_sprite_mod = false;
-std::string path_to_lvl = "Assets/Scenes/";
+std::string path_to_lvl = "Assets/Scenes/default.json";
+
+Texture2D cur_tex;
 
 int current_ent_id = 0;
 std::string input_field = "";
+
+int current_tex = 0;
+std::vector<std::string> vec_of_path;
 
 enum Components
 {
@@ -31,6 +39,14 @@ enum Components
 int
 main()
 {
+    std::string path = "Assets/Textures";
+    for (const auto& entry : fs::recursive_directory_iterator(path)) {
+        std::string new_path =  entry.path().string();
+        
+        if (new_path.substr(new_path.length() - 3, 3) == "png")
+            vec_of_path.push_back(entry.path().string());
+    }
+
     const Vector2 screen_size { 1280, 720 };
     InitWindow(screen_size.x, screen_size.y, "Creative Coding: Platformer");
     SetTargetFPS(60);
@@ -144,9 +160,43 @@ main()
         if (insert_mod) {
             DrawRectangleV(Vector2{ 0,0 }, Vector2{ screen_size.x ,screen_size.y }, Color{ 100,100,100,100 });
             
-            
+            if (choose_sprite_mod) {
+                DrawTextEx(fontTtf, "- > " + storage.entities[current_ent_id].name + "\n" +
+                                    "choose sprite - enter", Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
+                //cur_tex = LoadTexture(vec_of_path[current_tex]);
+                DrawTexture(cur_tex, screen_size.x / 2 - cur_tex.width / 2, screen_size.y / 2 - cur_tex.height / 2 - 40, WHITE);
 
-            if (current_ent_id != -1) {
+                if (IsKeyPressed(KEY_UP)) {
+                    current_tex--;
+                    if (current_tex < 0) {
+                        current_ent_id = 0;
+                    }
+                    cur_tex = LoadTexture(vec_of_path[current_tex]);
+                }
+                else if (IsKeyPressed(KEY_DOWN)) {
+                    current_tex++;
+                    if (current_tex > vec_of_path.size() - 1) {
+                        current_tex = vec_of_path.size() - 1;
+                    }
+                    cur_tex = LoadTexture(vec_of_path[current_tex]);
+                }
+                else if (IsKeyPressed(KEY_ENTER)) {
+                    
+                    for(int k = 0; k< vec_of_path[current_tex].length(); k++)
+                        if(vec_of_path[current_tex][k]== '\\')
+                            vec_of_path[current_tex][k] = '/';
+
+                    storage.entities.back().components.push_back(
+                        new plat::Sprite(vec_of_path[current_tex])
+                    );
+                    storage.entities.back().getComponent<plat::Sprite>()->path = vec_of_path[current_tex];
+                    std::cout << std::string(vec_of_path[current_tex]) << std::endl;
+                    choose_sprite_mod = false;
+                    draw_queue = create_draw_order(storage.entities);
+                }
+
+            }        
+            else if (current_ent_id != -1) {
                 DrawTextEx(fontTtf, "- > "+storage.entities[current_ent_id].name, Vector2{ 10,10 }, (float)fontTtf.baseSize, 2, GREEN);
                 DrawTextEx(fontTtf, "enter - add new component: " + input_field +
                     "\n1 Transform      2 Physic dynamic\n"+
@@ -180,6 +230,7 @@ main()
                             plat::Transform* trans = storage.entities.back().getComponent<plat::Transform>();
                             
                             if (!trans)
+                                input_field = "error";
                                 break;
 
                             plat::Physics* cur_phys = new plat::Physics();
@@ -216,9 +267,9 @@ main()
                             storage.entities.back().components.push_back(cur_phys);
                         }
                         case SPRITE: {
-                            storage.entities.back().components.push_back(
-                                new plat::Sprite(std::string(""))
-                            );
+                            choose_sprite_mod = true;
+                            
+                            cur_tex = LoadTexture(vec_of_path[current_tex]);
                             break;
                         }
                         case PLAYER_CONTROLL: {
@@ -322,6 +373,29 @@ main()
                storage.entities[storage.cur_camera].getComponent<plat::Transform>()->pos;
             
            
+            if (IsKeyPressed(KEY_H)) {
+                storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.x += 1;
+               // storage.entities[current_ent_id].getComponent<plat::Physics>()->collider.width *= 1.25;
+            }
+            else if (IsKeyPressed(KEY_L)) {
+                if (storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.x -1  > 0) {
+                    storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.x -= 1;
+                   
+                }
+
+            }
+            else if (IsKeyPressed(KEY_J)) {
+                storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.y += 1;
+                
+               
+            }
+            else if (IsKeyPressed(KEY_K)) {
+                if (storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.y - 1 > 0) {
+                    storage.entities[current_ent_id].getComponent<plat::Transform>()->scale.y -= 1;
+                    
+                }
+            }
+
             Vector3 cam_pos= storage.entities[current_ent_id].getComponent<plat::Transform>()->pos;
             plat::Physics* ph = storage.entities[current_ent_id].getComponent<plat::Physics>();
             
@@ -393,6 +467,9 @@ main()
                 play_mod = false;
             }
             else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_J) && !play_mod) {
+                export_lvl(storage);
+            }
+            else if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_R) ) {
                 export_lvl(storage);
             }
             else {
